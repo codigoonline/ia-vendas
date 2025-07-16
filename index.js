@@ -10,7 +10,7 @@ const mensagens = [
   "Antes de te explicar o método, queria te conhecer. Quantos anos você tem? E o que te motivou a procurar uma renda extra nesse momento?", // 1
   "Poxa, entendo totalmente… Hoje em dia tá difícil mesmo depender de uma pessoa, um salário ou ficar esperando as coisas caírem do céu. 😞", // 2
   "Me diz uma coisa, você já tentou ganhar dinheiro pela internet antes? Ou seria a primeira vez?", // 3
-  "Seguinte, eu faço parte de um projeto chamado PVO – Primeira Venda Online...", // 4
+  "Seguinte, eu faço parte de um projeto chamado PVO – Primeira Venda Online. 💼", // 4
   "Tudo é bem explicado, em vídeo-aulas curtas, com suporte 24h e um grupo com centenas de pessoas aprendendo junto.", // 5
   "Quer que eu te mostre como funciona na prática?", // 6
   `O conteúdo é 100% online, com acesso vitalício. Você aprende:\n\n✅ Como fazer sua primeira venda rápida\n✅ Como usar perfis anônimos\n✅ Como montar infoprodutos que já vendem prontos\n✅ Como criar um perfil que vende todos os dias`, // 7
@@ -18,10 +18,11 @@ const mensagens = [
   "Tem alunos nossos ganhando R$500, R$1.000 e até mais de R$2.000 por mês só aplicando o que ensino. 🤑", // 9
   "Se você focar, você também consegue. Ficou interessado na nossa mentoria?", // 10
   "Dá uma olhada no nosso site antes pra tirar qualquer dúvida: https://codigoonline.github.io/home", // 11
-  "Perfeito! Tenho certeza que você vai curtir.\n\n👉🏼 Link com bônus: https://pay.kirvano.com/d4c3d2f0-f1a2-44e9-8b67-51e142a18caf", // 12
-  "Não tem os 25? Poxa, faço um desconto especial: tudo por 15 e com os mesmos benefícios, fechado?", // 13
-  "👉🏼 Novo link com desconto: https://pay.kirvano.com/57b90f24-ffd0-443b-b726-78e6aa077945", // 14
-  "Sem problemas! Salva meu contato e me chama quando quiser garantir seu acesso, beleza?" // 15
+  "Você vai ter acesso a tudo isso por apenas 25 reais 👉🏼 https://pay.kirvano.com/d4c3d2f0-f1a2-44e9-8b67-51e142a18caf", // 12
+  "Relaxa que esse valor você pode pedir de volta a qualquer momento se não gostar da nossa mentoria. Você vai ter 30 dias de garantia sobre nosso treinamento. ✅", // 13
+  "Não tem os 25? Poxa, faço um desconto especial: tudo por 15 e com os mesmos benefícios, fechado?", // 14
+  "Aqui está um novo link de pagamento agora custando somente 15 reais 👇🏼\n👉🏼 https://pay.kirvano.com/57b90f24-ffd0-443b-b726-78e6aa077945", // 15
+  "Sem problemas! Salva meu contato e me chama quando quiser garantir seu acesso, beleza?" // 16
 ]
 
 let positivas = [], negativas = [], postergar = []
@@ -42,13 +43,6 @@ function detectarTipoResposta(msg) {
   return 'neutra'
 }
 
-async function enviarSequencia(sock, jid, msgs, delays = []) {
-  for (let i = 0; i < msgs.length; i++) {
-    await delay(delays[i] || 5000)
-    await sock.sendMessage(jid, { text: msgs[i] })
-  }
-}
-
 async function enviarImagens(sock, jid) {
   const imagens = [1, 2, 3, 4].map(i => path.join(__dirname, `imgs/img${i}.png`)).filter(fs.existsSync)
   for (const imgPath of imagens) {
@@ -60,7 +54,6 @@ async function enviarImagens(sock, jid) {
 async function iniciarBot() {
   const { state, saveCreds } = await useMultiFileAuthState('auth')
   const sock = makeWASocket({ auth: state, logger: P({ level: 'silent' }) })
-
   sock.ev.on('creds.update', saveCreds)
 
   positivas = carregarLista('positivas.txt')
@@ -86,53 +79,65 @@ async function iniciarBot() {
 
     if (texto.includes('quero aprender') && estado === 0) {
       estadoUsuario[sender] = 1
-      await enviarSequencia(sock, sender, [mensagens[0], mensagens[1]])
+      await sock.sendMessage(sender, { text: mensagens[0] })
+      await delay(5000)
+      await sock.sendMessage(sender, { text: mensagens[1] }) // idade e motivação
       return
     }
 
     if (estado === 1) {
       estadoUsuario[sender] = 2
-      await sock.sendMessage(sender, { text: mensagens[2] }) // "Poxa, entendo..."
-      await delay(60000) // Espera 1 min
-      await sock.sendMessage(sender, { text: mensagens[3] }) // "Já tentou ganhar dinheiro online?"
+      await sock.sendMessage(sender, { text: mensagens[2] }) // Poxa, entendo
+      await delay(60000)
+      await sock.sendMessage(sender, { text: mensagens[3] }) // Já tentou?
       return
     }
 
     if (estado === 2) {
       estadoUsuario[sender] = 3
-      await enviarSequencia(sock, sender, [mensagens[4], mensagens[5], mensagens[6], mensagens[7], mensagens[8]])
+      await delay(60000)
+      await sock.sendMessage(sender, { text: mensagens[4] })
       await delay(5000)
-      await sock.sendMessage(sender, { text: mensagens[9] }) // Alunos faturando
-      await enviarImagens(sock, sender) // Envia imagens
+      await sock.sendMessage(sender, { text: mensagens[5] })
       await delay(5000)
-      await sock.sendMessage(sender, { text: mensagens[10] }) // "Ficou interessado?"
+      await sock.sendMessage(sender, { text: mensagens[6] })
+      await delay(5000)
+      await sock.sendMessage(sender, { text: mensagens[7] })
+      await delay(5000)
+      await sock.sendMessage(sender, { text: mensagens[8] })
+      await delay(5000)
+      await sock.sendMessage(sender, { text: mensagens[9] })
+      await enviarImagens(sock, sender)
+      await delay(5000)
+      await sock.sendMessage(sender, { text: mensagens[10] }) // Ficou interessado?
       return
     }
 
-    if (estado === 3 && texto.includes('sim')) {
+    if (estado === 3 && tipo === 'positiva') {
       estadoUsuario[sender] = 4
-      await sock.sendMessage(sender, { text: mensagens[11] }) // Link do site
+      await sock.sendMessage(sender, { text: mensagens[11] }) // site
       return
     }
 
     if (estado === 4 && tipo === 'positiva') {
       estadoUsuario[sender] = 5
       await delay(5000)
-      await sock.sendMessage(sender, { text: mensagens[12] }) // Link de acesso
+      await sock.sendMessage(sender, { text: mensagens[12] }) // link 25
       await delay(5000)
-      await sock.sendMessage(sender, { text: mensagens[13] }) // Desconto
+      await sock.sendMessage(sender, { text: mensagens[13] }) // garantia
       return
     }
 
-    if (tipo === 'negativa') {
-      await sock.sendMessage(sender, { text: mensagens[14] }) // Oferta especial
+    if (estado >= 4 && tipo === 'negativa') {
+      estadoUsuario[sender] = 6
+      await sock.sendMessage(sender, { text: mensagens[14] }) // desconto
       await delay(5000)
-      await sock.sendMessage(sender, { text: mensagens[15] }) // Link com desconto
+      await sock.sendMessage(sender, { text: mensagens[15] }) // link 15
       return
     }
 
     if (tipo === 'postergar') {
-      await sock.sendMessage(sender, { text: mensagens[16] }) // "Salva meu contato"
+      await sock.sendMessage(sender, { text: mensagens[16] }) // salva contato
       return
     }
   })
