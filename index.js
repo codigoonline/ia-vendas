@@ -1,8 +1,5 @@
-const {
-  default: makeWASocket,
-  useMultiFileAuthState
-} = require('@whiskeysockets/baileys')
-const qrcode = require('qrcode-terminal')
+const { default: makeWASocket, useMultiFileAuthState, fetchLatestBaileysVersion, makeInMemoryStore } = require('@whiskeysockets/baileys')
+const { Boom } = require('@hapi/boom')
 const fs = require('fs')
 const path = require('path')
 
@@ -48,24 +45,13 @@ const estados = {}
 async function startBot() {
   const { state, saveCreds } = await useMultiFileAuthState('auth')
   const sock = makeWASocket({
-    auth: state
+    auth: state,
+    printQRInTerminal: true,
   })
 
   sock.ev.on('creds.update', saveCreds)
 
-  // ✅ EXIBE QR NO TERMINAL
-  sock.ev.on('connection.update', (update) => {
-    const { qr, connection } = update
-    if (qr) {
-      console.log("📲 Escaneie este QR Code com seu WhatsApp Web:")
-      qrcode.generate(qr, { small: true })
-    }
-    if (connection === 'open') {
-      console.log("✅ Conectado com sucesso!")
-    }
-  })
-
-  sock.ev.on('messages.upsert', async ({ messages }) => {
+  sock.ev.on('messages.upsert', async ({ messages, type }) => {
     const msg = messages[0]
     if (!msg.message || msg.key.fromMe) return
 
