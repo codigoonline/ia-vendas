@@ -11,7 +11,7 @@ const mensagens = [
   "Poxa, entendo totalmente… Hoje em dia tá difícil mesmo depender de uma pessoa, um salário ou ficar esperando as coisas caírem do céu. 😞", // 2
   "Me diz uma coisa, você já tentou ganhar dinheiro pela internet antes? Ou seria a primeira vez?", // 3
   "Seguinte, eu faço parte de um projeto chamado PVO – Primeira Venda Online...", // 4
-  "Tudo é bem explicado, em vídeo-aulas curtas, com suporte 24h e um grupo com centenas de pessoas aprendendo junto.", // 5
+  "Tudo lá é bem explicado, em vídeo-aulas curtas, com suporte 24h e um grupo com centenas de pessoas aprendendo juntos.", // 5
   "Quer que eu te mostre como funciona na prática?", // 6
   `O conteúdo é 100% online, com acesso vitalício. Você aprende:\n\n✅ Como fazer sua primeira venda rápida\n✅ Como usar perfis anônimos\n✅ Como montar infoprodutos que já vendem prontos\n✅ Como criar um perfil que vende todos os dias`, // 7
   `E o melhor:\n\n✅ Você tem 30 dias de garantia\n✅ Suporte 24h\n✅ Serve pra qualquer idade ou nível.`, // 8
@@ -88,7 +88,7 @@ async function iniciarBot() {
     if (estado === 0) {
       await delay(20000) // Delay de 20s para a primeira resposta
       estadoUsuario[sender] = 1
-      await sock.sendMessage(sender, { text: mensagens[1] }) // Pergunta inicial
+      await enviarSequencia(sock, sender, [mensagens[0], mensagens[1]], [3000, 3000]) // Mensagens com delay de 3s
       return
     }
 
@@ -104,7 +104,7 @@ async function iniciarBot() {
     if (estado === 2) {
       await delay(60000) // Espera 1 min após a resposta do cliente
       estadoUsuario[sender] = 3
-      await enviarSequencia(sock, sender, [mensagens[4], mensagens[5]]) // Mensagens sobre o projeto
+      await enviarSequencia(sock, sender, [mensagens[4], mensagens[5], mensagens[6]], [0, 0, 0]) // Mensagens sobre o projeto
       await delay(20000) // Espera 20s
       await sock.sendMessage(sender, { text: mensagens[3] }) // Pergunta novamente
       return
@@ -114,11 +114,10 @@ async function iniciarBot() {
       await delay(20000) // Espera 20s após a resposta do cliente
       estadoUsuario[sender] = 4
       await enviarSequencia(sock, sender, [
-        mensagens[6],
         mensagens[7],
         mensagens[8],
         mensagens[9]
-      ], [0, 3000, 3000, 3000]) // Envia mensagens com delay de 3s entre elas
+      ], [3000, 3000, 3000]) // Envia mensagens com delay de 3s entre elas
       await enviarImagens(sock, sender) // Envia imagens
       await sock.sendMessage(sender, { text: mensagens[10] }) // "Se você focar..."
       await delay(5000) // Delay de 5s
@@ -151,4 +150,3 @@ async function iniciarBot() {
 }
 
 iniciarBot()
-        
