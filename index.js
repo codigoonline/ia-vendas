@@ -2,6 +2,7 @@ const { default: makeWASocket, useMultiFileAuthState, DisconnectReason } = requi
 const fs = require('fs')
 const path = require('path')
 const P = require('pino')
+const qrcode = require('qrcode-terminal')
 const delay = ms => new Promise(res => setTimeout(res, ms))
 
 const mensagens = [
@@ -12,8 +13,17 @@ const mensagens = [
   "Seguinte, eu faço parte de um projeto chamado PVO – Primeira Venda Online. É um método passo a passo que te ensina a fazer sua primeira venda na internet em até 24h — mesmo que você nunca tenha vendido nada antes e sem precisar aparecer.",
   "Tudo é bem explicado, em vídeo-aulas curtas, com suporte 24h e um grupo com centenas de pessoas aprendendo junto.",
   "Quer que eu te mostre como funciona na prática?",
-  `O conteúdo é 100% online, com acesso vitalício. Você aprende:\n\n✅ Como fazer sua primeira venda rápida\n✅ Como usar perfis anônimos (sem aparecer)\n✅ Como montar infoprodutos que já vendem prontos\n✅ Como criar um perfil que vende todos os dias`,
-  `E o melhor:\n\n✅ Você tem 30 dias de garantia\n✅ Suporte 24h\n✅ Serve pra qualquer idade ou nível.`,
+  `O conteúdo é 100% online, com acesso vitalício. Você aprende:
+
+✅ Como fazer sua primeira venda rápida
+✅ Como usar perfis anônimos (sem aparecer)
+✅ Como montar infoprodutos que já vendem prontos
+✅ Como criar um perfil que vende todos os dias`,
+  `E o melhor:
+
+✅ Você tem 30 dias de garantia.
+✅ Suporte 24h.
+✅ Serve pra qualquer idade ou nível.`,
   "Tem alunos nossos ganhando R$500, R$1.000 e até mais de R$2.000 por mês só aplicando o que ensino. 🤑",
   "Se você focar, você também consegue. Ficou interessado na nossa mentoria?",
   "Dá uma olhada no nosso site antes pra tirar qualquer dúvida: https://codigoonline.github.io/home",
@@ -44,7 +54,6 @@ async function iniciarBot() {
   const { state, saveCreds } = await useMultiFileAuthState('auth')
   const sock = makeWASocket({
     auth: state,
-    printQRInTerminal: true,
     logger: P({ level: 'silent' })
   })
 
@@ -53,6 +62,21 @@ async function iniciarBot() {
   positivas = carregarLista('positivas.txt')
   negativas = carregarLista('negativas.txt')
   postergar = carregarLista('postergar.txt')
+
+  sock.ev.on('connection.update', (update) => {
+    const { qr, connection, lastDisconnect } = update
+    if (qr) {
+      qrcode.generate(qr, { small: true })
+    }
+    if (connection === 'close') {
+      const reason = lastDisconnect?.error?.output?.statusCode
+      if (reason !== DisconnectReason.loggedOut) {
+        iniciarBot()
+      } else {
+        console.log('❌ Desconectado. Faça login novamente.')
+      }
+    }
+  })
 
   sock.ev.on('messages.upsert', async ({ messages }) => {
     const msg = messages[0]
@@ -76,14 +100,16 @@ async function iniciarBot() {
       await delay(7000)
       await sock.sendMessage(sender, { text: mensagens[8] })
       await sock.sendMessage(sender, { text: mensagens[9] })
+
       for (let i = 1; i <= 4; i++) {
         const imgPath = path.join(__dirname, `imgs/img${i}.png`)
         if (fs.existsSync(imgPath)) {
           const buffer = fs.readFileSync(imgPath)
-          await sock.sendMessage(sender, { image: buffer }, { quoted: msg })
+          await sock.sendMessage(sender, { image: buffer })
           await delay(1500)
         }
       }
+
       await sock.sendMessage(sender, { text: mensagens[10] })
       await delay(2000)
       await sock.sendMessage(sender, { text: mensagens[11] })
@@ -97,17 +123,6 @@ async function iniciarBot() {
       await sock.sendMessage(sender, { text: mensagens[15] })
     } else if (tipo === 'postergar') {
       await sock.sendMessage(sender, { text: mensagens[16] })
-    }
-  })
-
-  sock.ev.on('connection.update', update => {
-    if (update.connection === 'close') {
-      const reason = update.lastDisconnect?.error?.output?.statusCode
-      if (reason === DisconnectReason.loggedOut) {
-        console.log('❌ Conexão encerrada. Refaça o login.')
-      } else {
-        iniciarBot()
-      }
     }
   })
 }
