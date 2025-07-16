@@ -18,10 +18,11 @@ const mensagens = [
   "Tem alunos nossos ganhando R$500, R$1.000 e até mais de R$2.000 por mês só aplicando o que ensino. 🤑", // 9
   "Se você focar, você também consegue. Ficou interessado na nossa mentoria?", // 10
   "Dá uma olhada no nosso site antes pra tirar qualquer dúvida: https://codigoonline.github.io/home", // 11
-  "Perfeito! Tenho certeza que você vai curtir.\n\n👉🏼 Link com bônus: https://pay.kirvano.com/d4c3d2f0-f1a2-44e9-8b67-51e142a18caf", // 12
-  "Não tem os 25? Poxa, faço um desconto especial: tudo por 15 e com os mesmos benefícios, fechado?", // 13
-  "👉🏼 Novo link com desconto: https://pay.kirvano.com/57b90f24-ffd0-443b-b726-78e6aa077945", // 14
-  "Sem problemas! Salva meu contato e me chama quando quiser garantir seu acesso, beleza?" // 15
+  "Perfeito! Tenho certeza que você vai Adorar participar da elite das pessoas que faturam somente com o digital.\n\n👉🏼 Link para garantir seu acesso: https://pay.kirvano.com/d4c3d2f0-f1a2-44e9-8b67-51e142a18caf", // 12
+  "Relaxa pois, você vai ter 30 dias de garantia sobre nosso treinamento e se não gostar é só pedir seu dinheiro de volta a qualquer momento, sem enrolação", // 13
+  "Não tem os 25? Poxa, faço um desconto especial: tudo por 15 e com os mesmos benefícios, fechado?", // 14
+  "Aqui está um novo link de pagamento agora custando somente 15 reais\n👉🏼 https://pay.kirvano.com/57b90f24-ffd0-443b-b726-78e6aa077945", // 15
+  "Estamos aguardando você pra começarmos a te ensinar do 0 como faturar na internet" // 16
 ]
 
 let positivas = [], negativas = [], postergar = []
@@ -86,59 +87,68 @@ async function iniciarBot() {
 
     if (estado === 0) {
       await delay(20000) // Delay de 20s para a primeira resposta
-      if (texto.includes('quero aprender')) {
-        estadoUsuario[sender] = 1
-        await enviarSequencia(sock, sender, [mensagens[0], mensagens[1]])
-        return
-      }
+      estadoUsuario[sender] = 1
+      await sock.sendMessage(sender, { text: mensagens[1] }) // Pergunta inicial
+      return
     }
 
     if (estado === 1) {
+      await delay(60000) // Espera 1 min após a resposta do cliente
       estadoUsuario[sender] = 2
       await sock.sendMessage(sender, { text: mensagens[2] }) // "Poxa, entendo..."
-      await delay(60000) // Espera 1 min
+      await delay(7000) // Espera 7s
       await sock.sendMessage(sender, { text: mensagens[3] }) // "Já tentou ganhar dinheiro online?"
       return
     }
 
     if (estado === 2) {
+      await delay(60000) // Espera 1 min após a resposta do cliente
       estadoUsuario[sender] = 3
-      await enviarSequencia(sock, sender, [mensagens[4], mensagens[5], mensagens[6], mensagens[7], mensagens[8]])
-      await delay(60000) // Espera 1 min após a pergunta
-      await sock.sendMessage(sender, { text: mensagens[9] }) // Alunos faturando
-      await enviarImagens(sock, sender) // Envia imagens
-      await delay(5000)
-      await sock.sendMessage(sender, { text: mensagens[10] }) // "Ficou interessado?"
+      await enviarSequencia(sock, sender, [mensagens[4], mensagens[5]]) // Mensagens sobre o projeto
+      await delay(20000) // Espera 20s
+      await sock.sendMessage(sender, { text: mensagens[3] }) // Pergunta novamente
       return
     }
 
-    if (estado === 3 && texto.includes('sim')) {
+    if (estado === 3) {
+      await delay(20000) // Espera 20s após a resposta do cliente
       estadoUsuario[sender] = 4
-      await sock.sendMessage(sender, { text: mensagens[11] }) // Link do site
+      await enviarSequencia(sock, sender, [
+        mensagens[6],
+        mensagens[7],
+        mensagens[8],
+        mensagens[9]
+      ], [0, 3000, 3000, 3000]) // Envia mensagens com delay de 3s entre elas
+      await enviarImagens(sock, sender) // Envia imagens
+      await sock.sendMessage(sender, { text: mensagens[10] }) // "Se você focar..."
+      await delay(5000) // Delay de 5s
       return
     }
 
     if (estado === 4 && tipo === 'positiva') {
       estadoUsuario[sender] = 5
-      await delay(5000)
-      await sock.sendMessage(sender, { text: mensagens[12] }) // Link de acesso
-      await delay(5000)
-      await sock.sendMessage(sender, { text: "relaxa que esse valor você pode pedir de volta a qualquer momento se não gostar da nossa mentoria, você vai ter 30 dias de garantia sobre nosso treinamento" }) // Mensagem de garantia
+      await enviarSequencia(sock, sender, [mensagens[12], mensagens[13]]) // Mensagens de acesso e garantia
       return
     }
 
     if (estado === 4 && tipo === 'negativa') {
-      await sock.sendMessage(sender, { text: mensagens[13] }) // Oferta especial
-      await delay(5000)
-      await sock.sendMessage(sender, { text: mensagens[14] }) // Novo link com desconto
+      await sock.sendMessage(sender, { text: mensagens[14] }) // Oferta especial
+      await delay(5000) // Delay de 5s
+      return
+    }
+
+    if (estado === 5 && tipo === 'positiva') {
+      await sock.sendMessage(sender, { text: mensagens[15] }) // Novo link com desconto
+      await delay(5000) // Delay de 5s
       return
     }
 
     if (tipo === 'postergar') {
-      await sock.sendMessage(sender, { text: mensagens[15] }) // "Salva meu contato"
+      await sock.sendMessage(sender, { text: mensagens[16] }) // "Salva meu contato"
       return
     }
   })
 }
 
 iniciarBot()
+        
