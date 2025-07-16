@@ -5,7 +5,7 @@ const P = require('pino')
 const qrcode = require('qrcode-terminal')
 const delay = ms => new Promise(res => setTimeout(res, ms))
 
-const readLines = filePath => fs.readFileSync(filePath, 'utf-8').split('\n').map(l => l.trim()).filter(Boolean)
+const readLines = filePath => fs.existsSync(filePath) ? fs.readFileSync(filePath, 'utf-8').split('\n').map(l => l.trim()).filter(Boolean) : []
 
 const positivas = readLines('./variacoes/positivas.txt')
 const negativas = readLines('./variacoes/negativas.txt')
@@ -41,6 +41,8 @@ const detectarIntencao = texto => {
   if (positivas.some(p => texto.includes(p))) return 'positiva'
   if (negativas.some(n => texto.includes(n))) return 'negativa'
   if (postergar.some(p => texto.includes(p))) return 'postergar'
+  if (texto.includes('sim')) return 'positiva'
+  if (texto.includes('não') || texto.includes('nao')) return 'negativa'
   return 'indefinido'
 }
 
@@ -50,15 +52,28 @@ async function iniciarBot() {
   const { state, saveCreds } = await useMultiFileAuthState('auth')
   const sock = makeWASocket({
     logger: P({ level: 'silent' }),
-    printQRInTerminal: true,
-    auth: state
+    auth: state,
+    browser: ['Ubuntu', 'Chrome', '20.0']
   })
 
   sock.ev.on('connection.update', (update) => {
-    const { connection, qr } = update
-    if (qr) qrcode.generate(qr, { small: true })
+    const { connection, lastDisconnect, qr } = update
+
+    if (qr) {
+      console.log('\n🔁 Aguardando pareamento... Escaneie o QR abaixo:\n')
+      qrcode.generate(qr, { small: true })
+    }
+
     if (connection === 'open') {
-      console.log('✅ WhatsApp conectado com sucesso!')
+      console.log('\n✅ WhatsApp conectado com sucesso!')
+    }
+
+    if (connection === 'close') {
+      const shouldReconnect = lastDisconnect?.error?.output?.statusCode !== DisconnectReason.loggedOut
+      console.log('❌ Conexão encerrada. Reconectar?', shouldReconnect)
+      if (shouldReconnect) {
+        iniciarBot()
+      }
     }
   })
 
